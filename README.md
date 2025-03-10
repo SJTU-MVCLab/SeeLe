@@ -118,7 +118,7 @@ Our work is largely based on the implementation of **[3DGS](https://github.com/g
 For more technical details, please refer to our [paper](https://arxiv.org/abs/2503.05168).
 
 ## 📬 Contact  
-If you have any questions or need further assistance, feel free to reach out to:  
+If you have any questions, feel free to reach out to:  
 
 - **Xiaotong Huang** — [hxt0512@sjtu.edu.cn](mailto:hxt0512@sjtu.edu.cn)  
 - **He Zhu** — [2394241800@qq.com](mailto:2394241800@qq.com)  
