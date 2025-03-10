@@ -1,0 +1,49 @@
+#!/bin/bash
+# Function to get an available GPU with memory usage below the threshold
+get_available_gpu() {
+  local mem_threshold=25000
+  nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits | \
+    awk -v threshold="$mem_threshold" -F', ' '
+      $2 < threshold { print $1; exit }
+    '
+}
+
+# List of dataset names
+# datasets=("bicycle" "bonsai" "counter" "flowers" "garden" "kitchen" "room" "stump" "treehill" "train" "truck" "playroom" "drjohnson")
+datasets=("counter") # Replace with your actual dataset names
+
+# Path to models
+model_base_path="output/$1" # PATH TO YOUR MODELS
+
+# Setting for load_finetune
+load_finetune=true  # Set to true or false based on your requirement
+
+# Iterate over each dataset
+for dataset_name in "${datasets[@]}"; do
+    echo "Processing dataset: $dataset_name"
+    
+    # Find an available GPU
+    while true; do 
+        available_gpu=$(get_available_gpu)
+        if [ -z "$available_gpu" ]; then
+            echo "No GPU available with memory usage below threshold. Waiting..."
+            sleep 60
+            continue
+        fi
+
+        echo "Using GPU: $available_gpu"
+        echo "load_finetune: $load_finetune"
+        if [ "$load_finetune" = true ]; then
+            CUDA_VISIBLE_DEVICES="$available_gpu" python3 seele_render.py -m "$model_base_path/$dataset_name" --skip_train --load_finetune
+        else
+            CUDA_VISIBLE_DEVICES="$available_gpu" python3 seele_render.py -m "$model_base_path/$dataset_name" --skip_train
+        fi
+        
+        # Run the metrics.py script and append the output to the same log file
+        python3 metrics.py -m "$model_base_path/$dataset_name"
+        break
+    done
+done
+
+# Completion signal
+echo "All datasets processed. Task complete."

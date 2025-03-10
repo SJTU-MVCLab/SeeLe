@@ -1,0 +1,13 @@
+*.pyc
+.vscode
+output
+build
+seele-gaussian-rasterization/diff_rast.egg-info
+seele-gaussian-rasterization/dist
+tensorboard_3d
+screenshots
+temps*
+output*
+dataset*
+.out
+.ipynb

@@ -1,0 +1,10 @@
+submodules/seele-gaussian-rasterization
+submodules/simple-knn
+submodules/fused-ssim
+
+plyfile
+scikit-learn
+tqdm
+opencv-python
+joblib
+icecream
