@@ -4,9 +4,9 @@
 ![Teaser image](assets/teaser.png)
 
 ## 🔍What is it?
-This repository provides the official implementation of **SeeLe**, a general acceleration framework for the [3D Gaussian Splatting (3DGS)](https://github.com/graphdeco-inria/gaussian-splatting) pipeline, specifically designed for resource-constrained mobile devices. Our framework achieves a **2.6× speedup** and **32.5% model reduction** while maintaining superior rendering quality compared to existing methods. On an NVIDIA AGX Orin mobile GPU, SeeLe achieves over **90 FPS**⚡, meeting the real-time requirements for VR applications.
+This repository provides the official implementation of **SeeLe**, a general acceleration framework for the [3D Gaussian Splatting (3DGS)](https://github.com/graphdeco-inria/gaussian-splatting) pipeline, specifically designed for resource-constrained mobile devices. Our framework achieves a **2.6× speedup** and **32.5% model reduction** while maintaining superior rendering quality compared to existing methods. On an NVIDIA AGX Orin mobile SoC, SeeLe achieves over **90 FPS**⚡, meeting the real-time requirements for VR applications.
 
-The demonstration of our algorithm is as follows:
+There is a short demo video of our algorithm running on an Nvidia AGX Orin SoC:
 
 https://github.com/user-attachments/assets/49cafdb6-5c8f-43cf-ab05-aa24a39ea1fc
 
