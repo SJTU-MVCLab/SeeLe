@@ -4,9 +4,9 @@
 ![Teaser image](assets/teaser.png)
 
 ## 🔍What is it?
-This repository provides the official implementation of **SeeLe**, a general acceleration framework for the [3D Gaussian Splatting (3DGS)](https://github.com/graphdeco-inria/gaussian-splatting) pipeline, specifically designed for resource-constrained mobile devices. Our framework achieves a **2.6× speedup** and **32.5% model reduction** while maintaining superior rendering quality compared to existing methods. On an NVIDIA AGX Orin mobile GPU, SeeLe achieves over **90 FPS**⚡, meeting the real-time requirements for VR applications.
+This repository provides the official implementation of **SeeLe**, a general acceleration framework for the [3D Gaussian Splatting (3DGS)](https://github.com/graphdeco-inria/gaussian-splatting) pipeline, specifically designed for resource-constrained mobile devices. Our framework achieves a **2.6× speedup** and **32.5% model reduction** while maintaining superior rendering quality compared to existing methods. On an NVIDIA AGX Orin mobile SoC, SeeLe achieves over **90 FPS**⚡, meeting the real-time requirements for VR applications.
 
-The demonstration of our algorithm is as follows:
+There is a short demo video of our algorithm running on an Nvidia AGX Orin SoC:
 
 https://github.com/user-attachments/assets/49cafdb6-5c8f-43cf-ab05-aa24a39ea1fc
 
@@ -75,30 +75,28 @@ bash scripts/run_seele_render.sh seele
 After training and fine-tuning, you can **evaluate the model** using the following standalone scripts:  
 
 #### 1. Render with `seele_render.py`  
-To render a fine-tuned **SeeLe** model:  
+Renders a **SeeLe** model with optional fine-tuning:  
 ```shell
-python3 seele_render.py -m <path to your model> --load_finetune
+python3 seele_render.py -m <path_to_model> [--load_finetune]
 ```
-- **Without --load_finetune**: The script only loads the **pre-finetune** model, which is the direct output from the initial clustering stage.
-- **With --load_finetune**: The script loads the **fine-tuned** SeeLe model, which has undergone additional optimization for better rendering quality.
+- **Without `--load_finetune`**: Loads the model **before fine-tuning** (output from clustering).  
+- **With `--load_finetune`**: Loads the **fine-tuned** model for improved rendering quality.  
 
-#### 2. Render with `async_seele_render.py`
-To render a fine-tuned **SeeLe** model with the asynchronous memory management optimization:
+#### 2. Asynchronous Rendering with `async_seele_render.py`  
+Uses **CUDA Stream API** for **efficient memory management**, asynchronously loading fine-tuned Gaussian point clouds:  
 ```shell
-python3 async_seele_render.py -m <path to your model>
+python3 async_seele_render.py -m <path_to_model>
 ```
-Unlike `seele_render.py`, this script asynchronously loads the fine-tuned Gaussian point clouds of different clusters, reducing memory overhead and improving rendering efficiency.
 
-#### 3. Visualize Rendered Output in GUI  
-To interactively visualize the rendered output using a GUI:  
+#### 3. Visualize in GUI with `render_video.py`  
+Interactively preview rendered results in a GUI:  
 ```shell
-python3 render_video.py -m <path to your model> --load_seele
+python3 render_video.py -m <path_to_model> [--load_seele]
 ```
-- **Without --load_seele**: The script only loads the original model.
-- **With --load_seele**: The script loads the **fine-tuned** SeeLe modelq.
+- **Without `--load_seele`**: Loads the **original** model.  
+- **With `--load_seele`**: Loads the **fine-tuned SeeLe** model.  
 
 ## 🏋️‍♂️ Validate with a Pretrained Model  
-
 To verify the correctness of **SeeLe**, we provide a **sample checkpoint** for evaluation. You can download it [here](https://drive.google.com/file/d/1oAwn04VgJ0Qc3hNaNwhTPioyS8hoXyWy/view?usp=sharing). This example includes the following key components:  
 
 - **clusters** — The fine-tuned **SeeLe** model.  
