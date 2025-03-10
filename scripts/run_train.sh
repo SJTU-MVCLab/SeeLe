@@ -11,9 +11,9 @@ dataset_base_path="dataset/$1" # PATH TO YOUR DATASET
 
 # Iterate over each dataset
 for dataset_name in "${datasets[@]}"; do
-    echo "Processing dataset: $dataset_name\n"
+    echo "Processing dataset: $dataset_name"
     python3 train.py -m "$model_base_path/$dataset_name" -s "$dataset_base_path/$dataset_name" --eval
-    echo "Test:\n"
+    echo "Test:"
     python3 render.py -m "$model_base_path/$dataset_name" -s "$dataset_base_path/$dataset_name" --skip_train --eval 
     python3 metrics.py -m "$model_base_path/$dataset_name" 
 done
