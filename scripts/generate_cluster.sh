@@ -30,7 +30,7 @@ for dataset_name in "${datasets[@]}"; do
 
         echo "Using GPU: $available_gpu"
         # Run the Python script with the selected GPU
-        CUDA_VISIBLE_DEVICES="$available_gpu" nohup python generate_cluster.py -m "$model_base_path/$dataset_name"
+        CUDA_VISIBLE_DEVICES="$available_gpu" python generate_cluster.py -m "$model_base_path/$dataset_name"
         break
     done
 done
