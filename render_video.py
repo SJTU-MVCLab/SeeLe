@@ -153,7 +153,7 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
     K = len(cluster_data["cluster_viewpoint"])
     cluster_centers = cluster_data["centers"]
         
-    if args.load_finetune:
+    if args.load_seele:
         cluster_gaussians = [
             torch.load(os.path.join(model_path, f"clusters/finetune/point_cloud_{cid}.pth"), map_location="cpu")
             for cid in range(K)
@@ -177,13 +177,13 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
         if glfw.window_should_close(player.window): 
             break
         
-        if args.load_finetune:
+        if args.load_seele:
             if cur_label_idx != test_labels[idx]:
                 cur_label_idx = test_labels[idx]
                 gaussians.restore_gaussians(cluster_gaussians[test_labels[idx]])
             rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh, rasterizer_type="CR")["render"]
         else:
-            rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh, rasterizer_type="CR")["render"]
+            rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)["render"]
                     
         end_time = time.time()
         fps = 1 / (end_time - start_time)
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument("--iteration", default=-1, type=int)
     parser.add_argument("--frames", default=1000, type=int)
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument("--load_finetune", action="store_true")
+    parser.add_argument("--load_seele", action="store_true")
     args = get_combined_args(parser)
     print("Rendering " + args.model_path)
 
