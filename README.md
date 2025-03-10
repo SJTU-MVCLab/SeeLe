@@ -74,17 +74,29 @@ bash scripts/run_seele_render.sh seele
 ### 🎨 Evaluation  
 After training and fine-tuning, you can **evaluate the model** using the following standalone scripts:  
 
-#### 1. Render and Evaluate with `seele_render.py`  
-To render and evaluate a trained **SeeLe** model:  
+#### 1. Render with `seele_render.py`  
+To render a fine-tuned **SeeLe** model:  
 ```shell
 python3 seele_render.py -m <path to your model> --load_finetune
 ```
+- **Without --load_finetune**: The script only loads the **pre-finetune** model, which is the direct output from the initial clustering stage.
+- **With --load_finetune**: The script loads the **fine-tuned** SeeLe model, which has undergone additional optimization for better rendering quality.
 
-#### 2. Visualize Rendered Output in GUI  
+#### 2. Render with `async_seele_render.py`
+To render a fine-tuned **SeeLe** model with the asynchronous memory management optimization:
+```shell
+python3 async_seele_render.py -m <path to your model>
+```
+Unlike `seele_render.py`, this script asynchronously loads the fine-tuned Gaussian point clouds of different clusters, reducing memory overhead and improving rendering efficiency.
+
+#### 3. Visualize Rendered Output in GUI  
 To interactively visualize the rendered output using a GUI:  
 ```shell
-python3 render_video.py -s <path to your dataset> -m <path to your model>
+python3 render_video.py -m <path to your model> --load_seele
 ```
+- **Without --load_seele**: The script only loads the original model.
+- **With --load_seele**: The script loads the **fine-tuned** SeeLe modelq.
+
 ## 🏋️‍♂️ Validate with a Pretrained Model  
 
 To verify the correctness of **SeeLe**, we provide a **sample checkpoint** for evaluation. You can download it [here](https://drive.google.com/file/d/1oAwn04VgJ0Qc3hNaNwhTPioyS8hoXyWy/view?usp=sharing). This example includes the following key components:  

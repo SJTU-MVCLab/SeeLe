@@ -63,7 +63,8 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         rendering = render(
             view, gaussians, pipeline, background,
             use_trained_exp=train_test_exp,
-            separate_sh=separate_sh
+            separate_sh=separate_sh,
+            rasterizer_type="CR"
         )["render"]
             
         torch.cuda.current_stream().wait_stream(stream_manager.load_stream)
@@ -102,7 +103,6 @@ if __name__ == "__main__":
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument("--load_finetune", action="store_true")
     args = get_combined_args(parser)
     args.data_device = 'cpu'
     print("Rendering " + args.model_path)
