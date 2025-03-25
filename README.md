@@ -77,11 +77,12 @@ After training and fine-tuning, you can **evaluate the model** using the followi
 #### 1. Render with `seele_render.py`  
 Renders a **SeeLe** model with optional fine-tuning:  
 ```shell
-python3 seele_render.py -m <path_to_model> [--load_finetune]
+python3 seele_render.py -m <path_to_model> [--load_finetune] [--debug]
 ```
 - **Without `--load_finetune`**: Loads the model **before fine-tuning** (output from clustering).  
 - **With `--load_finetune`**: Loads the **fine-tuned** model for improved rendering quality.  
-
+- **With `--debug`**: Prints the execution time per rendering.
+  
 #### 2. Asynchronous Rendering with `async_seele_render.py`  
 Uses **CUDA Stream API** for **efficient memory management**, asynchronously loading fine-tuned Gaussian point clouds:  
 ```shell
