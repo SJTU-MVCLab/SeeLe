@@ -86,7 +86,7 @@ python3 seele_render.py -m <path_to_model> [--load_finetune] [--debug]
 #### 2. Asynchronous Rendering with `async_seele_render.py`  
 Uses **CUDA Stream API** for **efficient memory management**, asynchronously loading fine-tuned Gaussian point clouds:  
 ```shell
-python3 async_seele_render.py -m <path_to_model>
+python3 async_seele_render.py -m <path_to_model> [--debug]
 ```
 
 #### 3. Visualize in GUI with `render_video.py`  
