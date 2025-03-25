@@ -15,6 +15,8 @@ datasets=("counter") # Replace with your actual dataset names
 # Path to models
 model_base_path="output/$1" # PATH TO YOUR MODELS
 
+dataset_base_path="dataset/$1" # PATH TO YOUR DATASET
+
 # Iterate over each dataset
 for dataset_name in "${datasets[@]}"; do
     echo "Processing dataset: $dataset_name"
@@ -30,7 +32,7 @@ for dataset_name in "${datasets[@]}"; do
 
         echo "Using GPU: $available_gpu"
         # Run the render.py script with the selected GPU
-        CUDA_VISIBLE_DEVICES="$available_gpu" python render.py -m "$model_base_path/$dataset_name" --skip_train
+        CUDA_VISIBLE_DEVICES="$available_gpu" python render.py -m "$model_base_path/$dataset_name" -s "$dataset_base_path/$dataset_name" --skip_train
         # Run the metrics.py script and append the output to the same log file
         python3 metrics.py -m "$model_base_path/$dataset_name"
         break

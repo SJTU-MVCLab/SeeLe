@@ -15,6 +15,8 @@ datasets=("counter") # Replace with your actual dataset names
 # Path to models
 model_base_path="output/$1" # PATH TO YOUR MODELS
 
+dataset_base_path="dataset/$1" # PATH TO YOUR DATASET
+
 # Setting for load_finetune
 load_finetune=true  # Set to true or false based on your requirement
 
@@ -34,7 +36,7 @@ for dataset_name in "${datasets[@]}"; do
         echo "Using GPU: $available_gpu"
         echo "load_finetune: $load_finetune"
         if [ "$load_finetune" = true ]; then
-            CUDA_VISIBLE_DEVICES="$available_gpu" python3 seele_render.py -m "$model_base_path/$dataset_name" --skip_train --load_finetune
+            CUDA_VISIBLE_DEVICES="$available_gpu" python3 seele_render.py -m "$model_base_path/$dataset_name" -s "$dataset_base_path/$dataset_name" --skip_train --load_finetune
         else
             CUDA_VISIBLE_DEVICES="$available_gpu" python3 seele_render.py -m "$model_base_path/$dataset_name" --skip_train
         fi
