@@ -12,7 +12,7 @@ from gaussian_renderer import render
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
-from gaussian_renderer import GaussianModel
+from gaussian_renderer import GaussianModel, GaussianStreamManager
 from utils.pose_utils import generate_ellipse_path, getWorld2View2
 from generate_cluster import collect_featrues
 
@@ -147,41 +147,61 @@ def predict(X, centers):
     labels = np.argmin(distances, axis=1)
     return labels
 
-def render_set(model_path, views, gaussians, pipeline, background, train_test_exp, separate_sh, args):
-    with open(os.path.join(model_path, "clusters", "clusters.pkl"), "rb") as f:
-        cluster_data = pickle.load(f)
-    K = len(cluster_data["cluster_viewpoint"])
-    cluster_centers = cluster_data["centers"]
-        
+def render_set(model_path, views, gaussians, pipeline, background, train_test_exp, separate_sh, args):    
+    total_frame = args.frames
+    poses = generate_ellipse_path(views, total_frame)
+    test_views = poses2views_like(views[0], poses)
+    
+    stream_manager = None
     if args.load_seele:
+        # Load cluster data
+        with open(os.path.join(model_path, "clusters", "clusters.pkl"), "rb") as f:
+            cluster_data = pickle.load(f)
+        K = len(cluster_data["cluster_viewpoint"])
+        cluster_centers = cluster_data["centers"]
+        
+        # Determine the test cluster labels
+        test_features = collect_featrues(test_views)
+        test_labels = predict(test_features, cluster_centers)
+        
+        # Load all Gaussians to CPU
         cluster_gaussians = [
             torch.load(os.path.join(model_path, f"clusters/finetune/point_cloud_{cid}.pth"), map_location="cpu")
             for cid in range(K)
         ]
-    
+
+        # Initialize stream manager
+        stream_manager = GaussianStreamManager(
+            cluster_gaussians=cluster_gaussians,
+            initial_cid=test_labels[0]
+        )
+        
     # Warm up
     for _ in range(20):
         render(views[0], gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)
-
-    total_frame = args.frames
-    poses = generate_ellipse_path(views, total_frame)
-    test_views = poses2views_like(views[0], poses)
-
-    test_features = collect_featrues(test_views)
-    test_labels = predict(test_features, cluster_centers)
     
     player = OpenGLVideoPlayer(W=views[0].image_width, H=views[0].image_height, total_frames=total_frame)
-    cur_label_idx = -1
     start_time = time.time()
     for idx, view in enumerate(tqdm(test_views, desc="frame_data progress")):
         if glfw.window_should_close(player.window): 
             break
         
         if args.load_seele:
-            if cur_label_idx != test_labels[idx]:
-                cur_label_idx = test_labels[idx]
-                gaussians.restore_gaussians(cluster_gaussians[test_labels[idx]])
-            rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh, rasterizer_type="CR")["render"]
+            if idx + 1 < len(views):
+                next_cid = test_labels[idx+1]
+                stream_manager.preload_next(next_cid)
+
+            gaussians.restore_gaussians(stream_manager.get_current())
+
+            rendering = render(
+                view, gaussians, pipeline, background,
+                use_trained_exp=train_test_exp,
+                separate_sh=separate_sh,
+                rasterizer_type="CR"
+            )["render"]
+                
+            torch.cuda.current_stream().wait_stream(stream_manager.load_stream)
+            stream_manager.switch_gaussians()
         else:
             rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)["render"]
                     
@@ -189,9 +209,12 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
         fps = 1 / (end_time - start_time)
         start_time = end_time
         
+        # print(fps)
         player.run(idx, fps, rendering)
         
     glfw.terminate()
+    if stream_manager is not None:
+        stream_manager.cleanup()
 
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, separate_sh: bool, args: ArgumentParser):
     with torch.no_grad():
