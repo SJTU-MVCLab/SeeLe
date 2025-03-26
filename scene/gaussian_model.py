@@ -242,29 +242,19 @@ class GaussianModel:
         
         gaussian_ids, lens = gaussian_split
         
-        self._N_fix = lens[0]
-        fix_mask = (torch.arange(len(gaussian_ids)) >= self._N_fix).cuda()
+        self._N_fix = lens[1] - lens[0]
+        fix_mask = (torch.arange(len(gaussian_ids)) >= lens[0]).cuda()
         
         for attr in self._gs_attrs:
             value = getattr(self, attr)
             new_value = value[gaussian_ids].detach().clone().requires_grad_(True)
-            setattr(self, attr, new_value)
-            
+            setattr(self, attr, new_value)    
         self.fix_gaussians(fix_mask)
-
-        self.max_radii2D = max_radii2D[gaussian_ids]
+        
+        self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
+        # self.max_radii2D = max_radii2D[gaussian_ids]
         self.training_setup(training_args, scale=0.01)
         
-        # import copy
-        # opt_dict = copy.deepcopy(opt_dict)
-        # for step in opt_dict["state"]:
-        #     group = opt_dict["state"][step]
-        #     exp_avg = group["exp_avg"][gaussian_ids]
-        #     exp_avg_sq = group["exp_avg_sq"][gaussian_ids]
-        #     group["exp_avg"] = exp_avg
-        #     group["exp_avg_sq"] = exp_avg_sq
-        # self.optimizer.load_state_dict(opt_dict)
-                                
     def get_exposure_from_name(self, image_name):
         if self.pretrained_exposures is None:
             return self._exposure[self.exposure_mapping[image_name]]
@@ -316,7 +306,7 @@ class GaussianModel:
             {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale * scale, "name": "xyz"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
-            {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
+            {'params': [self._opacity], 'lr': training_args.opacity_lr * scale, "name": "opacity"},
             {'params': [self._scaling], 'lr': training_args.scaling_lr, "name": "scaling"},
             {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"}
         ]
@@ -583,10 +573,6 @@ class GaussianModel:
     def densify_and_prune(self, max_grad, min_opacity, extent, max_screen_size, radii):
         grads = self.xyz_gradient_accum / self.denom
         grads[grads.isnan()] = 0.0
-        
-        if self._N_fix != 0:
-            fix_mask = (torch.arange(len(grads)) < self._N_fix).cuda()
-            grads[fix_mask] = 0.0
 
         self.tmp_radii = radii
         self.densify_and_clone(grads, max_grad, extent)

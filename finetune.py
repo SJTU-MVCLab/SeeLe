@@ -118,7 +118,7 @@ def training_cluster(dataset, opt, pipe, gaussians, scene, first_iter, testing_i
 
         bg = torch.rand((3), device="cuda") if opt.random_background else background
 
-        render_pkg = render(viewpoint_cam, gaussians, pipe, bg, use_trained_exp=dataset.train_test_exp, separate_sh=SPARSE_ADAM_AVAILABLE, rasterizer_type="CR")
+        render_pkg = render(viewpoint_cam, gaussians, pipe, bg, use_trained_exp=dataset.train_test_exp, separate_sh=SPARSE_ADAM_AVAILABLE)
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
         # if viewpoint_cam.alpha_mask is not None:
@@ -278,7 +278,8 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
     args = parser.parse_args(sys.argv[1:])
-    op.densify_until_iter = args.iterations
+    # op.densify_until_iter = args.iterations
+    op.position_lr_max_steps = args.iterations
     args.save_iterations.append(args.iterations)
     
     print("Optimizing " + args.model_path)

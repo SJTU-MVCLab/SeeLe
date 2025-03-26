@@ -51,7 +51,7 @@ def collect_featrues(views):
         features.append(generate_features_from_Rt(view.R, view.T))
     return np.array(features)
 
-def merge_neighbor_mask(centers, cluster_masks, labels, neigh = 2):
+def merge_neighbor_mask(centers, cluster_masks, labels, neigh):
     K, P = cluster_masks.shape
     
     total_shared = total_exclusive = 0
@@ -68,7 +68,7 @@ def merge_neighbor_mask(centers, cluster_masks, labels, neigh = 2):
 
         gaussians_counter = cluster_masks[merge_clusters].sum(axis=0)
         shared_mask = (gaussians_counter > ((neigh + 1) // 2))
-        exclusive_mask = np.logical_and(~shared_mask, (gaussians_counter != 0))
+        exclusive_mask = np.logical_xor(shared_mask, (gaussians_counter != 0))
 
         shared, exclusive = map(lambda x: x.nonzero()[0], [shared_mask, exclusive_mask])
         gaussian_ids = np.concatenate([shared, exclusive], axis=0)
