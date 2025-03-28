@@ -187,7 +187,7 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
             break
         
         if args.load_seele:
-            if idx + 1 < len(views):
+            if idx + 1 < len(test_views):
                 next_cid = test_labels[idx+1]
                 stream_manager.preload_next(next_cid)
 
