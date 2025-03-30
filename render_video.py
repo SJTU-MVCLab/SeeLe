@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
 from gaussian_renderer import GaussianModel, GaussianStreamManager
 from utils.pose_utils import generate_ellipse_path, getWorld2View2
-from generate_cluster import collect_featrues
+from generate_cluster import collect_features
 
 import time
 
@@ -161,7 +161,7 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
         cluster_centers = cluster_data["centers"]
         
         # Determine the test cluster labels
-        test_features = collect_featrues(test_views)
+        test_features = collect_features(test_views)
         test_labels = predict(test_features, cluster_centers)
         
         # Load all Gaussians to CPU
