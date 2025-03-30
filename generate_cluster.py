@@ -45,7 +45,7 @@ def generate_features_from_Rt(R, t, translate=np.array([.0, .0, .0]), scale=1.0)
     feature_vector = np.concatenate([cam_center, quaternion])
     return feature_vector
 
-def collect_featrues(views):
+def collect_features(views):
     features = []
     for view in views:
         features.append(generate_features_from_Rt(view.R, view.T))
@@ -100,8 +100,8 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
     with torch.no_grad():
         gaussians = GaussianModel(dataset.sh_degree)
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
-        train_features = collect_featrues(scene.getTrainCameras())
-        test_features = collect_featrues(scene.getTestCameras())
+        train_features = collect_features(scene.getTrainCameras())
+        test_features = collect_features(scene.getTestCameras())
         kmeans = KMeans(n_clusters=args.k, random_state=42, n_init='auto').fit(train_features)
         centers = kmeans.cluster_centers_
         train_labels = kmeans.labels_
