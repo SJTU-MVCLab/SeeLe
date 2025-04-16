@@ -1,10 +1,28 @@
 #!/bin/bash
+export CUDA_VISIBLE_DEVICES=9
+dataset_base_path="dataset/seele" # PATH TO YOUR DATASET
+output_base_path="output/seele" # PATH TO YOUR OUTPUT
 
-models=("seele")
+datasets=("counter") # Replace with your actual dataset names
+# datasets=("bicycle" "bonsai" "counter" "flowers" "garden" "kitchen" "room" "stump" "treehill" "train" "truck" "playroom" "drjohnson")
 
-for model in "${models[@]}"; do
-    bash scripts/run_train.sh $model
-    bash scripts/generate_cluster.sh $model
-    bash scripts/run_finetune.sh $model
-    bash scripts/run_seele_render.sh $model
+for dataset in "${datasets[@]}"; do
+    model_path="$output_base_path/$dataset"
+    dataset_path="$dataset_base_path/$dataset"
+
+    echo "Train dataset: $dataset"
+    python3 train.py -m $model_path -s $dataset_path --eval
+
+    echo "Generate clusters for dataset: $dataset"
+    python3 generate_cluster.py -m $model_path
+
+    echo "Finetune dataset: $dataset"
+    python3 finetune.py -m $model_path -s $dataset_path --eval
+
+    echo "Render dataset: $dataset"
+    python3 seele_render.py -m $model_path -s $dataset_path --eval --load_finetune --save_image
+    # python3 seele_render.py -m $model_path -s $dataset_path --eval --load_finetune --save_image --debug
+    
+    echo "Metrics for dataset: $dataset"
+    python3 metrics.py -m $model_path
 done

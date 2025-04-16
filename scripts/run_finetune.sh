@@ -13,9 +13,9 @@ get_available_gpu() {
 datasets=("counter") # Replace with your actual dataset names
 
 # Path to models
-model_base_path="output/$1" # PATH TO YOUR MODELS
+model_base_path="output/seele" # PATH TO YOUR MODELS
 
-dataset_base_path="dataset/$1" # PATH TO YOUR DATASET
+dataset_base_path="dataset/seele" # PATH TO YOUR DATASET
 port=6035
 
 # Iterate over each dataset
