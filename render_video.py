@@ -3,7 +3,6 @@ import numpy as np
 import joblib
 import torch
 import os
-import copy
 import time
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -12,10 +11,9 @@ from gaussian_renderer import render, GaussianModel, GaussianStreamManager
 from utils.general_utils import safe_state
 from utils.pose_utils import generate_ellipse_path, getWorld2View2
 from arguments import ModelParams, PipelineParams, get_combined_args
-from generate_cluster import collect_features
+from generate_cluster import collect_features  # Fixed typo in function name
 
 SPARSE_ADAM_AVAILABLE = False
-
 
 class VideoPlayer:
     """Efficient video player using pyglet for 3DGS rendering display."""
@@ -36,6 +34,7 @@ class VideoPlayer:
         self.total_frames = total_frames
         self.current_frame = 0
         self.fps = 0.0
+        self.last_time = time.time()
         
         # Initialize texture with blank frame
         self._init_texture(width, height)
@@ -79,7 +78,6 @@ class VideoPlayer:
         """Update the display with new frame data.
         
         Args:
-            frame_idx: Current frame index (0-based)
             frame_data: Numpy array containing frame data (H,W,3)
         """
         # Convert tensor if necessary
@@ -98,11 +96,20 @@ class VideoPlayer:
             self.window.width, self.window.height,
             'RGB', frame_data.tobytes()
         ).get_texture()
+
+        # Update performance metrics
+        self._update_perf_metrics()
         
         # Update UI
-        self.label.text = f'Frame: {self.current_frame + 1}/{self.total_frames} | FPS: {self.fps:.2f}'
+        self.label.text = f'Frame: {self.current_frame+1}/{self.total_frames} | FPS: {self.fps:.2f}'
         self.progress_bar.width = self.progress_bar_max_width * (self.current_frame+1)/self.total_frames
-        print(self.label.text)
+        self.current_frame += 1
+
+    def _update_perf_metrics(self):
+        """Calculate and update FPS metrics."""
+        current_time = time.time()
+        self.fps = 1.0 / max(0.001, current_time - self.last_time)  # Avoid division by zero
+        self.last_time = current_time
 
     def on_draw(self):
         """Window draw event handler."""
@@ -110,197 +117,123 @@ class VideoPlayer:
         if self.texture:
             self.texture.blit(0, 0, width=self.window.width, height=self.window.height)
         self.batch.draw()
-
-
-def create_views_from_poses(template_view, poses):
-    """Generate camera views from pose matrices.
-    
-    Args:
-        template_view: Template camera view to copy parameters from
-        poses: List of pose matrices (4x4)
         
-    Returns:
-        List of camera view objects
-    """
+def poses2views_like(template, poses):
+    import copy
     views = []
     for pose in poses:
-        view = copy.deepcopy(template_view)
+        view = copy.deepcopy(template)
         view.R = pose[:3, :3].T
         view.T = pose[:3, 3]
-        view.world_view_transform = torch.tensor(
-            getWorld2View2(view.R, view.T, view.trans, view.scale)
-        ).transpose(0, 1).cuda()
-        view.full_proj_transform = (
-            view.world_view_transform.unsqueeze(0).bmm(view.projection_matrix.unsqueeze(0))
-        ).squeeze(0)
+        view.world_view_transform = torch.tensor(getWorld2View2(view.R, view.T, view.trans, view.scale)).transpose(0, 1).cuda()
+        view.full_proj_transform = (view.world_view_transform.unsqueeze(0).bmm(view.projection_matrix.unsqueeze(0))).squeeze(0)
         view.camera_center = view.world_view_transform.inverse()[3, :3]
         views.append(view)
     return views
 
+def predict(X, centers):
+    distances = np.sum((X[:, np.newaxis, :] - centers) ** 2,axis=2)
+    labels = np.argmin(distances, axis=1)
+    return labels
 
-def predict_cluster_labels(features, centers):
-    """Predict cluster labels for given features using nearest center.
+def render_set(model_path, views, gaussians, pipeline, background, train_test_exp, separate_sh, args):    
+    total_frame = args.frames
+    poses = generate_ellipse_path(views, total_frame)
+    test_views = poses2views_like(views[0], poses)
     
-    Args:
-        features: Input features (N,D)
-        centers: Cluster centers (K,D)
-        
-    Returns:
-        Array of cluster labels (N,)
-    """
-    distances = np.sum((features[:, np.newaxis, :] - centers) ** 2, axis=2)
-    return np.argmin(distances, axis=1)
-
-
-def render_animation(
-    model_path: str,
-    input_views: list,
-    gaussians: GaussianModel,
-    pipeline_params: dict,
-    background: torch.Tensor,
-    use_trained_exp: bool,
-    separate_sh: bool,
-    args
-):
-    """Main rendering function for 3DGS animation.
-    
-    Args:
-        model_path: Path to the trained model
-        input_views: List of input camera views
-        gaussians: GaussianModel instance
-        pipeline_params: Rendering pipeline parameters
-        background: Background color tensor
-        use_trained_exp: Whether to use trained exposures
-        separate_sh: Whether to use separate spherical harmonics
-        args: Command line arguments
-    """
-    # Generate camera path and corresponding views
-    poses = generate_ellipse_path(input_views, args.frames)
-    render_views = create_views_from_poses(input_views[0], poses)
-    
-    # Initialize streaming manager if using SEELE
     stream_manager = None
     if args.load_seele:
+        # Load cluster data
         cluster_data = joblib.load(os.path.join(model_path, "clusters", "clusters.pkl"))
+        K = len(cluster_data["cluster_viewpoint"])
+        cluster_centers = cluster_data["centers"]
         
-        # Predict cluster labels for each view
-        view_features = collect_features(render_views)
-        view_labels = predict_cluster_labels(view_features, cluster_data["centers"])
+        # Determine the test cluster labels
+        test_features = collect_features(test_views)
+        test_labels = predict(test_features, cluster_centers)
         
-        # Load all cluster Gaussians
+        # Load all Gaussians to CPU
         cluster_gaussians = [
-            torch.load(
-                os.path.join(model_path, f"clusters/finetune/point_cloud_{cid}.pth"),
-                map_location="cpu"
-            )
-            for cid in range(len(cluster_data["cluster_viewpoint"]))
+            torch.load(os.path.join(model_path, f"clusters/finetune/point_cloud_{cid}.pth"), map_location="cpu")
+            for cid in range(K)
         ]
-        
+
+        # Initialize stream manager
         stream_manager = GaussianStreamManager(
             cluster_gaussians=cluster_gaussians,
-            initial_cid=view_labels[0]
+            initial_cid=test_labels[0]
         )
-    
-    # Warm-up render passes
-    for _ in range(3):  # Reduced from 20 to 3 for faster startup
-        render(
-            input_views[0], gaussians, pipeline_params, background,
-            use_trained_exp=use_trained_exp,
-            separate_sh=separate_sh
-        )
+        
+    # Warm up
+    for _ in range(5):
+        render(views[0], gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)
     
     # Initialize video player
-    player = VideoPlayer(
-        width=input_views[0].image_width,
-        height=input_views[0].image_height,
-        total_frames=args.frames
-    )
+    player = VideoPlayer(width=views[0].image_width, height=views[0].image_height, total_frames=total_frame)
 
     def update_frame(dt):
         """Callback function for frame updates."""
         nonlocal stream_manager, gaussians
         
-        if player.current_frame >= args.frames:
+        if player.current_frame >= args.frames - 1:
             pyglet.app.exit()
             return
         
-        t_start = time.time()
-        current_view = render_views[player.current_frame]
+        current_view = test_views[player.current_frame]
         
         # Handle streaming if enabled
         if args.load_seele:
             # Preload next frame's Gaussians
-            if player.current_frame + 1 < args.frames:
-                next_cid = view_labels[player.current_frame + 1]
+            if player.current_frame + 1 < total_frame:
+                next_cid = test_labels[player.current_frame + 1]
                 stream_manager.preload_next(next_cid)
             
             # Restore current Gaussians and render
             gaussians.restore_gaussians(stream_manager.get_current())
             rendering = render(
-                current_view, gaussians, pipeline_params, background,
-                use_trained_exp=use_trained_exp,
+                current_view, gaussians, pipeline, background,
+                use_trained_exp=train_test_exp,
                 separate_sh=separate_sh,
                 rasterizer_type="CR"
             )["render"]
-            
-            # Synchronize streams and switch buffers
-            torch.cuda.current_stream().wait_stream(stream_manager.load_stream)
-            stream_manager.switch_gaussians()
+
         else:
             # Standard rendering path
             rendering = render(
-                current_view, gaussians, pipeline_params, background,
-                use_trained_exp=use_trained_exp,
+                current_view, gaussians, pipeline, background,
+                use_trained_exp=train_test_exp,
                 separate_sh=separate_sh
             )["render"]
-            
-        torch.cuda.synchronize()
-        t_end = time.time()
-        player.fps = 1.0 / (t_end - t_start)
         
         # Update display
         player.update_frame(rendering)
-        player.current_frame += 1
+        if stream_manager is not None:
+            # Synchronize streams and switch buffers
+            torch.cuda.current_stream().wait_stream(stream_manager.load_stream)
+            stream_manager.switch_gaussians()
     
-    # Start rendering loop
-    pyglet.clock.schedule_interval(update_frame, 1/1000.0)
+    # Start rendering loop (target 500 FPS)
+    pyglet.clock.schedule_interval(update_frame, 1/500.0)
     pyglet.app.run()
     
-    # Cleanup
+    # clean up
     if stream_manager is not None:
         stream_manager.cleanup()
 
-
-def render_sets(
-    dataset: ModelParams,
-    iteration: int,
-    pipeline: PipelineParams,
-    separate_sh: bool,
-    args: ArgumentParser
-):
-    """Main entry point for rendering sets."""
+def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, separate_sh: bool, args: ArgumentParser):
     with torch.no_grad():
         gaussians = GaussianModel(dataset.sh_degree)
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
         
-        bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
+        bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-        render_animation(
-            dataset.model_path,
-            scene.getTrainCameras(),
-            gaussians,
-            pipeline,
-            background,
-            dataset.train_test_exp,
-            separate_sh,
-            args
-        )
+        render_set(dataset.model_path, scene.getTrainCameras(), gaussians, pipeline, background, dataset.train_test_exp, separate_sh, args)
 
-
+# Example usage
 if __name__ == "__main__":
-    # Parse command line arguments
-    parser = ArgumentParser(description="3DGS Rendering Parameters")
+    # Set up command line argument parser
+    parser = ArgumentParser(description="Testing script parameters")
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
     parser.add_argument("--iteration", default=-1, type=int)
@@ -308,14 +241,8 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--load_seele", action="store_true")
     args = get_combined_args(parser)
-    
-    print(f"Rendering {args.model_path}")
+    print("Rendering " + args.model_path)
+    # Initialize system state (RNG)
     safe_state(args.quiet)
-    
-    render_sets(
-        model.extract(args),
-        args.iteration,
-        pipeline.extract(args),
-        SPARSE_ADAM_AVAILABLE,
-        args
-    )
+
+    render_sets(model.extract(args), args.iteration, pipeline.extract(args), SPARSE_ADAM_AVAILABLE, args)
