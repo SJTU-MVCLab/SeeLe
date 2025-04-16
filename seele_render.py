@@ -61,8 +61,9 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
             rendering = rendering[..., rendering.shape[-1] // 2:]
             gt = gt[..., gt.shape[-1] // 2:]
 
-        torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
-        torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
+        if args.save_image:
+            torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
+            torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
 
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool, separate_sh: bool, args: ArgumentParser):
     with torch.no_grad():
@@ -88,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--load_finetune", action="store_true")
+    parser.add_argument("--save_image", action="store_true")
     args = get_combined_args(parser)
     args.depths = ""
     args.train_test_exp = False
