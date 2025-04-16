@@ -18,8 +18,8 @@ for dataset in "${datasets[@]}"; do
 
     echo "Finetune dataset: $dataset"
     python3 finetune.py \
-        -s "$dataset_base_path/$dataset_name" \
-        -m "$model_base_path/$dataset_name" \
+        -s $dataset_path \
+        -m $model_path \
         --start_checkpoint "$model_base_path/$dataset_name/chkpnt30000.pth" \
         --eval \
         --iterations 31_000     
