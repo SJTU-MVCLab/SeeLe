@@ -17,7 +17,7 @@ from os import makedirs
 from gaussian_renderer import render
 from utils.general_utils import safe_state
 
-import pickle
+import joblib
 import numpy as np
 from sklearn.cluster import KMeans
 
@@ -122,8 +122,7 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
             "test_labels": test_labels,
             "centers": centers
         }
-        with open(os.path.join(save_path, "clusters.pkl"), "wb") as f:
-            pickle.dump(data, f)
+        joblib.dump(data, os.path.join(save_path, "clusters.pkl"))
 
 if __name__ == "__main__":
     # Set up command line argument parser

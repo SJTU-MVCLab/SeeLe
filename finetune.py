@@ -11,7 +11,7 @@
 
 import os
 import torch
-import pickle
+import joblib
 from random import randint
 from utils.loss_utils import l1_loss, ssim
 from gaussian_renderer import render, network_gui
@@ -45,9 +45,9 @@ except:
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from):
     clusters_data_path = os.path.join(dataset.model_path, "clusters")
-    with open(os.path.join(clusters_data_path, "clusters.pkl"), "rb") as f:
-        clusters_data = pickle.load(f)
-    K = len(clusters_data["cluster_viewpoint"])
+    
+    cluster_data = joblib.load(os.path.join(clusters_data_path, "clusters.pkl"))
+    K = len(cluster_data["cluster_viewpoint"])
     
     finetune_path = os.path.join(clusters_data_path, "finetune")
     os.makedirs(finetune_path, exist_ok=True)
@@ -57,8 +57,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     scene = Scene(dataset, gaussians, shuffle=False)
     for cid in range(K):
         print(f"----------------- training cluster {cid} -----------------")
-        viewpoint_indices = clusters_data["cluster_viewpoint"][cid].tolist()
-        (gaussian_ids, lens) = clusters_data["cluster_gaussians"][cid]
+        viewpoint_indices = cluster_data["cluster_viewpoint"][cid].tolist()
+        (gaussian_ids, lens) = cluster_data["cluster_gaussians"][cid]
         (model_params, first_iter) = torch.load(checkpoint, weights_only=False)
         dataset.cid = cid
         dataset.viewpoint_indices = viewpoint_indices

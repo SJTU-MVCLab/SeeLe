@@ -9,7 +9,7 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 import numpy as np
-import pickle
+import joblib
 import torch
 from scene import Scene
 import os
@@ -36,8 +36,7 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(gts_path, exist_ok=True)
 
     # Load cluster data
-    with open(os.path.join(model_path, "clusters", "clusters.pkl"), "rb") as f:
-        cluster_data = pickle.load(f)
+    cluster_data = joblib.load(os.path.join(model_path, "clusters", "clusters.pkl"))
     K = len(cluster_data["cluster_viewpoint"])
     
     # Load all Gaussians to CPU
