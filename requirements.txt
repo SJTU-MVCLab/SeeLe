@@ -8,3 +8,4 @@ tqdm
 opencv-python
 joblib
 icecream
+pyglet
