@@ -20,7 +20,7 @@ for dataset in "${datasets[@]}"; do
     python3 finetune.py \
         -s $dataset_path \
         -m $model_path \
-        --start_checkpoint "$model_base_path/$dataset_name/chkpnt30000.pth" \
+        --start_checkpoint "$model_path/chkpnt30000.pth" \
         --eval \
         --iterations 31_000     
 
