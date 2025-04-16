@@ -58,16 +58,6 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
 
         if not skip_test:
              render_set(dataset.model_path, "test", scene.loaded_iter, scene.getTestCameras(), gaussians, pipeline, background, dataset.train_test_exp, separate_sh)
-
-    # 获取当前程序分配的GPU内存（以字节为单位）
-    allocated_memory = torch.cuda.memory_allocated()
-    # 获取当前程序保留的GPU内存（以字节为单位）
-    reserved_memory = torch.cuda.memory_reserved()
-    
-    # 转换为MB
-    allocated_memory_mb = allocated_memory / 1024**2
-    reserved_memory_mb = reserved_memory / 1024**2
-    print(allocated_memory_mb, reserved_memory_mb)
     
 if __name__ == "__main__":
     # Set up command line argument parser
