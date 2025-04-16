@@ -17,7 +17,12 @@ for dataset in "${datasets[@]}"; do
     python3 generate_cluster.py -m $model_path
 
     echo "Finetune dataset: $dataset"
-    python3 finetune.py -m $model_path -s $dataset_path --eval
+    python3 finetune.py \
+        -s "$dataset_base_path/$dataset_name" \
+        -m "$model_base_path/$dataset_name" \
+        --start_checkpoint "$model_base_path/$dataset_name/chkpnt30000.pth" \
+        --eval \
+        --iterations 31_000     
 
     echo "Render dataset: $dataset"
     python3 seele_render.py -m $model_path -s $dataset_path --eval --load_finetune --save_image
