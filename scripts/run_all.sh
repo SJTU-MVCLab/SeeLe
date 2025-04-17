@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=9
+export CUDA_VISIBLE_DEVICES=0
 dataset_base_path="dataset/seele" # PATH TO YOUR DATASET
 output_base_path="output/seele" # PATH TO YOUR OUTPUT
 
