@@ -98,7 +98,7 @@ python3 render_video.py -m <path_to_model> [--load_seele]
 - **With `--load_seele`**: Loads the **fine-tuned SeeLe** model.  
 
 ## 🏋️‍♂️ Validate with a Pretrained Model  
-To verify the correctness of **SeeLe**, we provide a **sample checkpoint** for evaluation. You can download it [here](https://drive.google.com/file/d/1oAwn04VgJ0Qc3hNaNwhTPioyS8hoXyWy/view?usp=sharing). This example includes the following key components:  
+To verify the correctness of **SeeLe**, we provide an example(counter dataset and checkpoint) for evaluation. You can download it [here](https://drive.google.com/file/d/1xfqSLFSLvx5IrpEZU62dw7xm1YZHiyYu/view?usp=sharing). This example includes the following key components:  
 
 - **clusters** — The fine-tuned **SeeLe** model.  
 - **point_cloud** — The original **3DGS** checkpoint.  
@@ -114,7 +114,7 @@ Our work is largely based on the implementation of **[3DGS](https://github.com/g
 - **`finetune.py`** — Fine-tunes each cluster separately and saves the trained models.  
 - **`seele_render.py`** — A modified version of `render.py`, designed to **load and render SeeLe models**.  
 - **`async_seele_render.py`** — Utilizes **CUDA stream API** for **asynchronous memory optimization** across different clusters.  
-- **`render_video.py`** — Uses **OpenGL** to render images in a GUI. The `--load_finetune` option enables **SeeLe model rendering**.  
+- **`render_video.py`** — Uses **pyglet** to render images in a GUI. The `--load_finetune` option enables **SeeLe model rendering**.  
 
 For more technical details, please refer to our [paper](https://arxiv.org/abs/2503.05168).
 
