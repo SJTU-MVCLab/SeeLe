@@ -98,7 +98,7 @@ python3 render_video.py -m <path_to_model> [--load_seele]
 - **With `--load_seele`**: Loads the **fine-tuned SeeLe** model.  
 
 ## 🏋️‍♂️ Validate with a Pretrained Model  
-To verify the correctness of **SeeLe**, we provide an example(counter dataset and checkpoint) for evaluation. You can download it [here](https://drive.google.com/file/d/1xfqSLFSLvx5IrpEZU62dw7xm1YZHiyYu/view?usp=sharing). This example includes the following key components:  
+To verify the correctness of **SeeLe**, we provide an example(dataset and checkpoint) for evaluation. You can download it [here](https://drive.google.com/file/d/1xfqSLFSLvx5IrpEZU62dw7xm1YZHiyYu/view?usp=sharing). This example includes the following key components:  
 
 - **clusters** — The fine-tuned **SeeLe** model.  
 - **point_cloud** — The original **3DGS** checkpoint.  
