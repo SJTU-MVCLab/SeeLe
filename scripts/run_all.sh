@@ -25,8 +25,7 @@ for dataset in "${datasets[@]}"; do
         --iterations 31_000     
 
     echo "Render dataset: $dataset"
-    python3 seele_render.py -m $model_path -s $dataset_path --eval --load_finetune --save_image
-    # python3 seele_render.py -m $model_path -s $dataset_path --eval --load_finetune --save_image --debug
+    python3 seele_render.py -m $model_path -s $dataset_path --eval --load_finetune --save_image --debug
     
     echo "Metrics for dataset: $dataset"
     python3 metrics.py -m $model_path
