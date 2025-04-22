@@ -79,8 +79,7 @@ Renders a **SeeLe** model with optional fine-tuning:
 ```shell
 python3 seele_render.py -m <path_to_model> [--load_finetune] [--debug]
 ```
-- **Without `--load_finetune`**: Loads the model **before fine-tuning** (output from clustering).  
-- **With `--load_finetune`**: Loads the **fine-tuned** model for improved rendering quality.  
+- **With `--load_finetune`**: Loads the **fine-tuned** model for improved rendering quality. Otherwise, loads the model **before fine-tuning**(output from `generate_cluster.py`).  
 - **With `--debug`**: Prints the execution time per rendering.
   
 #### 2. Asynchronous Rendering with `async_seele_render.py`  
@@ -94,8 +93,7 @@ Interactively preview rendered results in a GUI:
 ```shell
 python3 render_video.py -m <path_to_model> [--load_seele]
 ```
-- **Without `--load_seele`**: Loads the **original** model.  
-- **With `--load_seele`**: Loads the **fine-tuned SeeLe** model.  
+- **With `--load_seele`**: Loads the **fine-tuned SeeLe** model. Otherwise, loads the **original** model.
 
 ## 🏋️‍♂️ Validate with a Pretrained Model  
 To verify the correctness of **SeeLe**, we provide an example(dataset and checkpoint) for evaluation. You can download it [here](https://drive.google.com/file/d/1xfqSLFSLvx5IrpEZU62dw7xm1YZHiyYu/view?usp=sharing). This example includes the following key components:  
