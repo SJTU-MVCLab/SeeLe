@@ -20,6 +20,7 @@ from utils.general_utils import safe_state
 import joblib
 import numpy as np
 from sklearn.cluster import KMeans
+from scipy.spatial.transform import Rotation as Rot
 
 from argparse import ArgumentParser
 from arguments import ModelParams, PipelineParams, get_combined_args
@@ -31,15 +32,9 @@ except:
     SPARSE_ADAM_AVAILABLE = False
 
 def generate_features_from_Rt(R, t, translate=np.array([.0, .0, .0]), scale=1.0):
-    Rt = np.zeros((4, 4))
-    Rt[:3, :3] = R.transpose()
-    Rt[:3, 3] = t
-    Rt[3, 3] = 1.0
-
-    C2W = np.linalg.inv(Rt)
-    cam_center = C2W[:3, 3]
-    cam_center = (cam_center + translate) * scale
-    from scipy.spatial.transform import Rotation as Rot
+    # R_w2c: R.T, t_w2c: t 
+    # R_c2w: R, t_c2w: -R @ t
+    cam_center = (-R @ t + translate) * scale
     quaternion = Rot.from_matrix(R).as_quat()
 
     feature_vector = np.concatenate([cam_center, quaternion])
