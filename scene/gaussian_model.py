@@ -251,8 +251,8 @@ class GaussianModel:
             setattr(self, attr, new_value)    
         self.fix_gaussians(fix_mask)
         
-        self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
-        # self.max_radii2D = max_radii2D[gaussian_ids]
+        # self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
+        self.max_radii2D = max_radii2D[gaussian_ids]
         self.training_setup(training_args, scale=0.01)
         
     def get_exposure_from_name(self, image_name):
@@ -306,7 +306,7 @@ class GaussianModel:
             {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale * scale, "name": "xyz"},
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
-            {'params': [self._opacity], 'lr': training_args.opacity_lr * scale, "name": "opacity"},
+            {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
             {'params': [self._scaling], 'lr': training_args.scaling_lr, "name": "scaling"},
             {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"}
         ]
