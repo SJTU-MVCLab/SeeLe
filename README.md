@@ -91,7 +91,7 @@ python3 async_seele_render.py -m <path_to_model> [--debug]
 #### 3. Visualize in GUI with `render_video.py`  
 Interactively preview rendered results in a GUI:  
 ```shell
-python3 render_video.py -m <path_to_model> [--load_seele]
+python3 render_video.py -m <path_to_model> --use_gui [--load_seele]
 ```
 - **With `--load_seele`**: Loads the **fine-tuned SeeLe** model. Otherwise, loads the **original** model.
 
