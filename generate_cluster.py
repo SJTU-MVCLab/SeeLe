@@ -16,6 +16,7 @@ from tqdm import tqdm
 from os import makedirs
 from gaussian_renderer import render
 from utils.general_utils import safe_state
+from utils.graphics_utils import orthonormalize_rotation_matrix
 
 import joblib
 import numpy as np
@@ -34,17 +35,21 @@ except:
 def generate_features_from_Rt(R, t, translate=np.array([.0, .0, .0]), scale=1.0):
     # R_w2c: R.T, t_w2c: t 
     # R_c2w: R, t_c2w: -R @ t
+    R_ortho = orthonormalize_rotation_matrix(R)
+    rot = Rot.from_matrix(R_ortho)
+    q = rot.as_quat()
+    if q[3] < 0:
+        q = -q
+    
     cam_center = (-R @ t + translate) * scale
-    quaternion = Rot.from_matrix(R).as_quat()
-
-    feature_vector = np.concatenate([cam_center, quaternion])
+    feature_vector = np.concatenate([cam_center, q])
     return feature_vector
 
 def collect_features(views):
     features = []
     for view in views:
         features.append(generate_features_from_Rt(view.R, view.T))
-    return np.array(features)
+    return np.stack(features, axis=0)
 
 def merge_neighbor_mask(centers, cluster_masks, labels, neigh):
     K, P = cluster_masks.shape

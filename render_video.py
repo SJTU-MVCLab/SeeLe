@@ -10,9 +10,10 @@ from scene import Scene
 from gaussian_renderer import render, GaussianModel, GaussianStreamManager
 from utils.general_utils import safe_state
 from utils.pose_utils import generate_ellipse_path, getWorld2View2
+from utils.graphics_utils import orthonormalize_rotation_matrix
 from arguments import ModelParams, PipelineParams, get_combined_args
 from generate_cluster import collect_features  # Fixed typo in function name
-
+import torchvision
 SPARSE_ADAM_AVAILABLE = False
 
 class VideoPlayer:
@@ -132,22 +133,24 @@ def poses2views_like(template, poses):
     return views
 
 def predict(X, centers):
-    distances = np.sum((X[:, np.newaxis, :] - centers) ** 2,axis=2)
+    distances = np.sum((X[:, np.newaxis, 3:] - centers[:, 3:]) ** 2,axis=2)
     labels = np.argmin(distances, axis=1)
     return labels
 
 def render_set(model_path, views, gaussians, pipeline, background, train_test_exp, separate_sh, args):    
     total_frame = args.frames
+    load_seele = args.load_seele
+    use_gui = args.use_gui
+    
     poses = generate_ellipse_path(views, total_frame)
     test_views = poses2views_like(views[0], poses)
     
-    stream_manager = None
-    if args.load_seele:
+    stream_manager, test_labels = None, None
+    if load_seele:
         # Load cluster data
         cluster_data = joblib.load(os.path.join(model_path, "clusters", "clusters.pkl"))
         K = len(cluster_data["cluster_viewpoint"])
         cluster_centers = cluster_data["centers"]
-        
         # Determine the test cluster labels
         test_features = collect_features(test_views)
         test_labels = predict(test_features, cluster_centers)
@@ -167,55 +170,64 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
     # Warm up
     for _ in range(5):
         render(views[0], gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)
-    
-    # Initialize video player
-    player = VideoPlayer(width=views[0].image_width, height=views[0].image_height, total_frames=total_frame)
-
-    def update_frame(dt):
-        """Callback function for frame updates."""
-        nonlocal stream_manager, gaussians
         
-        if player.current_frame >= args.frames - 1:
-            pyglet.app.exit()
-            return
-        
-        current_view = test_views[player.current_frame]
-        
-        # Handle streaming if enabled
-        if args.load_seele:
+    def render_view(view, frame):
+        if load_seele:
             # Preload next frame's Gaussians
-            if player.current_frame + 1 < total_frame:
-                next_cid = test_labels[player.current_frame + 1]
+            if frame + 1 < total_frame:
+                next_cid = test_labels[frame + 1]
                 stream_manager.preload_next(next_cid)
-            
+                
             # Restore current Gaussians and render
             gaussians.restore_gaussians(stream_manager.get_current())
             rendering = render(
-                current_view, gaussians, pipeline, background,
+                view, gaussians, pipeline, background,
                 use_trained_exp=train_test_exp,
                 separate_sh=separate_sh,
                 rasterizer_type="CR"
             )["render"]
-
+            
+            # Synchronize streams and switch buffers
+            stream_manager.switch_gaussians()
         else:
             # Standard rendering path
             rendering = render(
-                current_view, gaussians, pipeline, background,
+                view, gaussians, pipeline, background,
                 use_trained_exp=train_test_exp,
                 separate_sh=separate_sh
             )["render"]
+            
+        return rendering
+    
+    if use_gui:
+        # Initialize video player
+        player = VideoPlayer(width=views[0].image_width, height=views[0].image_height, total_frames=total_frame)
+
+        def update_frame(dt):
+            """Callback function for frame updates."""
+            nonlocal stream_manager, gaussians
+    
+            if player.current_frame >= args.frames - 1:
+                pyglet.app.exit()
+                return
+            
+            current_view = test_views[player.current_frame]
+            rendering = render_view(current_view, player.current_frame)
+            # Update display
+            player.update_frame(rendering)
         
-        # Update display
-        player.update_frame(rendering)
-        if stream_manager is not None:
-            # Synchronize streams and switch buffers
-            torch.cuda.current_stream().wait_stream(stream_manager.load_stream)
-            stream_manager.switch_gaussians()
-    
-    # Start rendering loop (target 500 FPS)
-    pyglet.clock.schedule_interval(update_frame, 1/500.0)
-    pyglet.app.run()
-    
+        # Start rendering loop (target 500 FPS)
+        pyglet.clock.schedule_interval(update_frame, 1/500.0)
+        pyglet.app.run()
+    else:
+        output_dir = args.output_dir
+        os.makedirs(output_dir, exist_ok=True)
+        for frame_idx in range(len(test_views)):
+            view = test_views[frame_idx]
+            print(f"Rendering {frame_idx} image belong to cluster {test_labels[frame_idx]}")
+            rendering = render_view(view, frame_idx)
+            torchvision.utils.save_image(rendering, os.path.join(output_dir, '{0:05d}'.format(frame_idx) + ".png"))
+        
     # clean up
     if stream_manager is not None:
         stream_manager.cleanup()
@@ -228,7 +240,7 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-        render_set(dataset.model_path, scene.getTrainCameras(), gaussians, pipeline, background, dataset.train_test_exp, separate_sh, args)
+        render_set(dataset.model_path, scene.getTestCameras(), gaussians, pipeline, background, dataset.train_test_exp, separate_sh, args)
 
 # Example usage
 if __name__ == "__main__":
@@ -237,9 +249,11 @@ if __name__ == "__main__":
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
     parser.add_argument("--iteration", default=-1, type=int)
-    parser.add_argument("--frames", default=1000, type=int)
+    parser.add_argument("--frames", default=200, type=int)
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--load_seele", action="store_true")
+    parser.add_argument("--use_gui", action="store_true")
+    parser.add_argument('--output_dir', type=str, default="output/videos")
     args = get_combined_args(parser)
     print("Rendering " + args.model_path)
     # Initialize system state (RNG)
