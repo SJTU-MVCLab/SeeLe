@@ -10,9 +10,8 @@ from scene import Scene
 from gaussian_renderer import render, GaussianModel, GaussianStreamManager
 from utils.general_utils import safe_state
 from utils.pose_utils import generate_ellipse_path, getWorld2View2
-from utils.graphics_utils import orthonormalize_rotation_matrix
 from arguments import ModelParams, PipelineParams, get_combined_args
-from generate_cluster import collect_features  # Fixed typo in function name
+from generate_cluster import generate_features_from_Rt
 import torchvision
 SPARSE_ADAM_AVAILABLE = False
 
@@ -118,64 +117,68 @@ class VideoPlayer:
         if self.texture:
             self.texture.blit(0, 0, width=self.window.width, height=self.window.height)
         self.batch.draw()
-        
-def poses2views_like(template, poses):
-    import copy
-    views = []
-    for pose in poses:
-        view = copy.deepcopy(template)
-        view.R = pose[:3, :3].T
-        view.T = pose[:3, 3]
-        view.world_view_transform = torch.tensor(getWorld2View2(view.R, view.T, view.trans, view.scale)).transpose(0, 1).cuda()
-        view.full_proj_transform = (view.world_view_transform.unsqueeze(0).bmm(view.projection_matrix.unsqueeze(0))).squeeze(0)
-        view.camera_center = view.world_view_transform.inverse()[3, :3]
-        views.append(view)
-    return views
 
 def predict(X, centers):
-    distances = np.sum((X[:, np.newaxis, 3:] - centers[:, 3:]) ** 2,axis=2)
+    distances = np.sum((X[:, np.newaxis, :] - centers) ** 2,axis=2)
     labels = np.argmin(distances, axis=1)
     return labels
+
+def extract_features(Rt_list, trans=np.array([0.0, 0.0, 0.0]), scale=1.0):
+    features = []
+    for (R, t) in Rt_list:
+        features.append(generate_features_from_Rt(R, t, trans, scale))
+    return np.stack(features, axis=0)
 
 def render_set(model_path, views, gaussians, pipeline, background, train_test_exp, separate_sh, args):    
     total_frame = args.frames
     load_seele = args.load_seele
     use_gui = args.use_gui
     
+    # prepare the views
     poses = generate_ellipse_path(views, total_frame)
-    test_views = poses2views_like(views[0], poses)
+    Rt_list = [(pose[:3, :3].T, pose[:3, 3]) for pose in poses]
+    w2c_list = [
+        torch.tensor(getWorld2View2(Rt_list[frame][0], Rt_list[frame][1], views[0].trans, views[0].scale)).transpose(0, 1).cuda() 
+        for frame in range(total_frame)
+    ]
     
-    stream_manager, test_labels = None, None
+    stream_manager, labels = None, None
     if load_seele:
         # Load cluster data
         cluster_data = joblib.load(os.path.join(model_path, "clusters", "clusters.pkl"))
         K = len(cluster_data["cluster_viewpoint"])
         cluster_centers = cluster_data["centers"]
+        
         # Determine the test cluster labels
-        test_features = collect_features(test_views)
-        test_labels = predict(test_features, cluster_centers)
+        test_features = extract_features(Rt_list, trans=views[0].trans, scale=views[0].scale)
+        labels = predict(test_features, cluster_centers)
         
         # Load all Gaussians to CPU
         cluster_gaussians = [
             torch.load(os.path.join(model_path, f"clusters/finetune/point_cloud_{cid}.pth"), map_location="cpu")
             for cid in range(K)
         ]
-
+        
         # Initialize stream manager
         stream_manager = GaussianStreamManager(
             cluster_gaussians=cluster_gaussians,
-            initial_cid=test_labels[0]
+            initial_cid=labels[0]
         )
         
     # Warm up
     for _ in range(5):
         render(views[0], gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)
         
-    def render_view(view, frame):
+    def render_view(frame):
+        view = views[0]
+        view.world_view_transform = w2c_list[frame]
+        view.full_proj_transform = (view.world_view_transform.unsqueeze(0).bmm(view.projection_matrix.unsqueeze(0))).squeeze(0)
+        view.camera_center = view.world_view_transform.inverse()[3, :3]
+        
         if load_seele:
             # Preload next frame's Gaussians
             if frame + 1 < total_frame:
-                next_cid = test_labels[frame + 1]
+                next_cid = labels[frame + 1]
                 stream_manager.preload_next(next_cid)
                 
             # Restore current Gaussians and render
@@ -211,8 +214,7 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
                 pyglet.app.exit()
                 return
             
-            current_view = test_views[player.current_frame]
-            rendering = render_view(current_view, player.current_frame)
+            rendering = render_view(player.current_frame)
             # Update display
             player.update_frame(rendering)
         
@@ -222,10 +224,12 @@ def render_set(model_path, views, gaussians, pipeline, background, train_test_ex
     else:
         output_dir = args.output_dir
         os.makedirs(output_dir, exist_ok=True)
-        for frame_idx in range(len(test_views)):
-            view = test_views[frame_idx]
-            print(f"Rendering {frame_idx} image belong to cluster {test_labels[frame_idx]}")
-            rendering = render_view(view, frame_idx)
+        for frame_idx in range(total_frame):
+            if load_seele:
+                print(f"Rendering {frame_idx} image belong to cluster {labels[frame_idx]}")
+            else:
+                print(f"Rnedering {frame_idx} image")           
+            rendering = render_view(frame_idx)
             torchvision.utils.save_image(rendering, os.path.join(output_dir, '{0:05d}'.format(frame_idx) + ".png"))
         
     # clean up

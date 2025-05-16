@@ -14,7 +14,11 @@ for dataset in "${datasets[@]}"; do
     python3 train.py -m $model_path -s $dataset_path --eval
 
     echo "Generate clusters for dataset: $dataset"
-    python3 generate_cluster.py -m $model_path
+    if [[ "$dataset" == "playroom" || "$dataset" == "drjohnson" ]]; then
+        python3 generate_cluster.py -m $model_path -n 8
+    else
+        python3 generate_cluster.py -m $model_path -n 4
+    fi
 
     echo "Finetune dataset: $dataset"
     python3 finetune.py \

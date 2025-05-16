@@ -16,7 +16,7 @@ from tqdm import tqdm
 from os import makedirs
 from gaussian_renderer import render
 from utils.general_utils import safe_state
-from utils.graphics_utils import orthonormalize_rotation_matrix
+from utils.graphics_utils import getWorld2View2, orthonormalize_rotation_matrix
 
 import joblib
 import numpy as np
@@ -34,22 +34,24 @@ except:
 
 def generate_features_from_Rt(R, t, translate=np.array([.0, .0, .0]), scale=1.0):
     # R_w2c: R.T, t_w2c: t 
-    # R_c2w: R, t_c2w: -R @ t
-    R_ortho = orthonormalize_rotation_matrix(R)
+    # R_c2w: R, t_c2w: -R.T @ t
+    w2c = getWorld2View2(R, t, translate=translate, scale=scale)
+    c2w = np.linalg.inv(w2c)
+    
+    R_ortho = orthonormalize_rotation_matrix(c2w[:3, :3])
     rot = Rot.from_matrix(R_ortho)
     q = rot.as_quat()
     if q[3] < 0:
         q = -q
-    
-    cam_center = (-R @ t + translate) * scale
-    feature_vector = np.concatenate([cam_center, q])
+    feature_vector = np.concatenate([c2w[:3, 3], q])
     return feature_vector
 
-def collect_features(views):
+def extract_features(views):
     features = []
     for view in views:
         features.append(generate_features_from_Rt(view.R, view.T))
-    return np.stack(features, axis=0)
+    features = np.stack(features, axis=0)
+    return features
 
 def merge_neighbor_mask(centers, cluster_masks, labels, neigh):
     K, P = cluster_masks.shape
@@ -100,8 +102,8 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
     with torch.no_grad():
         gaussians = GaussianModel(dataset.sh_degree)
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
-        train_features = collect_features(scene.getTrainCameras())
-        test_features = collect_features(scene.getTestCameras())
+        train_features = extract_features(scene.getTrainCameras())
+        test_features = extract_features(scene.getTestCameras())
         kmeans = KMeans(n_clusters=args.k, random_state=42, n_init='auto').fit(train_features)
         centers = kmeans.cluster_centers_
         train_labels = kmeans.labels_
@@ -120,9 +122,10 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
             "cluster_viewpoint": merge_viewpoint,
             "train_labels": train_labels,
             "test_labels": test_labels,
-            "centers": centers
+            "centers": centers,
         }
         joblib.dump(data, os.path.join(save_path, "clusters.pkl"))
+        joblib.dump(kmeans,  os.path.join(save_path, "kmeans_model.pkl"))
 
 if __name__ == "__main__":
     # Set up command line argument parser
