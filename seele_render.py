@@ -43,7 +43,6 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         cluster_gaussian_ids = []
         for (gaussian_ids, lens) in cluster_data["cluster_gaussians"]:
             gaussian_ids = torch.tensor(gaussian_ids).cuda()
-            print(gaussian_ids.shape, lens)
             cluster_gaussian_ids.append((gaussian_ids, lens))
     labels = cluster_data[f"{name}_labels"]
     
