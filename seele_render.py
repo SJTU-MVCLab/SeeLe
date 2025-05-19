@@ -36,13 +36,14 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     K = len(cluster_data["cluster_viewpoint"])
 
     if args.load_finetune:
-        cluster_gaussains = [torch.load(os.path.join(model_path, f"clusters/finetune/point_cloud_{cid}.pth")) for cid in range(K)]
-        cluster_gaussains = [tuple(map(lambda x: x.cuda(), data)) for data in cluster_gaussains]
+        cluster_gaussians = [torch.load(os.path.join(model_path, f"clusters/finetune/point_cloud_{cid}.pth")) for cid in range(K)]
+        cluster_gaussians = [tuple(map(lambda x: x.cuda(), data)) for data in cluster_gaussians]
     else:
-        global_gaussains = gaussians.capture_gaussians()
+        global_gaussians = gaussians.capture_gaussians()
         cluster_gaussian_ids = []
         for (gaussian_ids, lens) in cluster_data["cluster_gaussians"]:
             gaussian_ids = torch.tensor(gaussian_ids).cuda()
+            print(gaussian_ids.shape, lens)
             cluster_gaussian_ids.append((gaussian_ids, lens))
     labels = cluster_data[f"{name}_labels"]
     
@@ -51,9 +52,9 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
 
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         if args.load_finetune:
-            gaussians.restore_gaussians(cluster_gaussains[labels[idx]])
+            gaussians.restore_gaussians(cluster_gaussians[labels[idx]])
         else:
-            gaussians.restore_gaussians(global_gaussains, cluster_gaussian_ids[labels[idx]])
+            gaussians.restore_gaussians(global_gaussians, cluster_gaussian_ids[labels[idx]])
         rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh, rasterizer_type="CR")["render"]
         gt = view.original_image[0:3, :, :]
 
@@ -64,6 +65,9 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         if args.save_image:
             torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
             torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + ".png"))
+    
+    if not args.load_finetune:
+        gaussians.restore_gaussians(global_gaussians)
 
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool, separate_sh: bool, args: ArgumentParser):
     with torch.no_grad():
