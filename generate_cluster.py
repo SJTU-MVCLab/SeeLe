@@ -38,8 +38,8 @@ def generate_features_from_Rt(R, t, translate=np.array([.0, .0, .0]), scale=1.0)
     w2c = getWorld2View2(R, t, translate=translate, scale=scale)
     c2w = np.linalg.inv(w2c)
     
-    rot = Rot.from_matrix(R)
-    q = rot.as_quat(canonical=True) # This function will orthonormalize R automatically.
+    rot = Rot.from_matrix(R) # This function will orthonormalize R automatically.
+    q = rot.as_quat(canonical=True) 
     feature_vector = np.concatenate([c2w[:3, 3], q])
     return feature_vector
 
