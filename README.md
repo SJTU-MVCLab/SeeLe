@@ -21,7 +21,7 @@ To install requirements:
 conda create -n seele python=3.9
 conda activate seele
 # Example for CUDA 12.4:
-pip3 install torch torchvision torchaudio
+pip3 install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
 pip3 install -r requirements.txt
 ```
 **Note:** [PyTorch](https://pytorch.org/) installation varies by system. Please ensure you install the appropriate version for your hardware.
