@@ -8,7 +8,7 @@ This repository provides the official implementation of **SeeLe**, a general acc
 
 There is a short demo video of our algorithm running on an Nvidia AGX Orin SoC:
 
-<video width="630" height="300" src="https://seele-project.netlify.app/static/videos/arxiv_demo.mp4"></video>
+https://github.com/user-attachments/assets/5831a20a-c2e2-4c57-876f-2ef913900cd3
 
 ## 🛠️ How to run?
 ### Installation
