@@ -1,5 +1,5 @@
 # SeeLe: A Unified Acceleration Framework for Real-Time Gaussian Splatting
-| [🌍Webpage](https://seele-project.netlify.app/) | [📄Full Paper](https://arxiv.org/abs/2503.05168) | [🎥Video](https://github.com/user-attachments/assets/49cafdb6-5c8f-43cf-ab05-aa24a39ea1fc) |
+| [🌍Webpage](https://seele-project.netlify.app/) | [📄Full Paper](https://arxiv.org/abs/2503.05168) | [🎥Video](https://seele-project.netlify.app/static/videos/arxiv_demo.mp4) |
 <br>
 ![Teaser image](assets/teaser.png)
 
@@ -8,7 +8,7 @@ This repository provides the official implementation of **SeeLe**, a general acc
 
 There is a short demo video of our algorithm running on an Nvidia AGX Orin SoC:
 
-https://github.com/user-attachments/assets/49cafdb6-5c8f-43cf-ab05-aa24a39ea1fc
+https://github.com/user-attachments/assets/d03b876b-cec4-4fec-a7c5-b786c99ab77c
 
 ## 🛠️ How to run?
 ### Installation
