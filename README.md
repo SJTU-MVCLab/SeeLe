@@ -1,7 +1,16 @@
-# SeeLe: A Unified Acceleration Framework for Real-Time Gaussian Splatting
-| [🌍Webpage](https://seele-project.netlify.app/) | [📄Full Paper](https://arxiv.org/abs/2503.05168) | [🎥Video](https://seele-project.netlify.app/static/videos/arxiv_demo.mp4) |
 <br>
-![Teaser image](assets/teaser.png)
+<p align="center">
+<h1 align="center"><strong>SeeLe: A Unified Acceleration Framework for Real-Time Gaussian Splatting</strong></h1>
+</p>
+
+<h3 align="center">⭐CVPR 2026</h3>
+<h3 align="center"><a href="https://seele-project.netlify.app/">🌍Webpage</a> | <a href="https://seele-project.netlify.app/static/videos/arxiv_demo.mp4">🎥Video</a> | <a href="https://arxiv.org/abs/2503.05168">📄arXiv</a></h3>
+<p align="center">
+  <img src="assets/teaser.png"
+       alt="SeeLe: Real-Time Gaussian Splatting Acceleration" 
+       width="90%" 
+       style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+</p>
 
 ## 🔍What is it?
 This repository provides the official implementation of **SeeLe**, a general acceleration framework for the [3D Gaussian Splatting (3DGS)](https://github.com/graphdeco-inria/gaussian-splatting) pipeline, specifically designed for resource-constrained mobile devices. Our framework achieves a **2.6× speedup** and **32.5% model reduction** while maintaining superior rendering quality compared to existing methods. On an NVIDIA AGX Orin mobile SoC, SeeLe achieves over **90 FPS**⚡, meeting the real-time requirements for VR applications.
@@ -40,7 +49,7 @@ dataset
 ## 🚀 Training and Evaluation 
 This section provides detailed instructions on how to **train**, **cluster**, **fine-tune**, and **render** the model using our provided scripts. We also provide **standalone evaluation scripts** for assessing the trained model.  
 
-### 🔄 One-Click Pipeline: Run Everything at Once  
+### 🔄 Run Everything at Once  
 For convenience, you can use the `run_all.sh` script to **automate the entire process** from training to rendering in a single command:  
 ```shell
 bash scripts/run_all.sh
@@ -48,6 +57,7 @@ bash scripts/run_all.sh
 **Note:** By default, all scripts will run on an exmaple scene "**Counter**" from **MipNeRF360**. If you want to train on other datasets, please modify the `datasets` variable in the script accordingly.
 
 ### 🏗️ Step-by-Step Training and Rendering  
+Instead, you can use the following scripts to run SeeLe step-by-step.
 #### 1. Train the 3DGS Model (30,000 Iterations)  
 To train the **3D Gaussian Splatting (3DGS) model**, use:  
 ```shell
@@ -120,18 +130,18 @@ For more technical details, please refer to our [paper](https://arxiv.org/abs/25
 ## 📬 Contact  
 If you have any questions, feel free to reach out to:  
 
-- **Xiaotong Huang** — [hxt0512@sjtu.edu.cn](mailto:hxt0512@sjtu.edu.cn)  
 - **He Zhu** — [2394241800@qq.com](mailto:2394241800@qq.com)  
+- **Xiaotong Huang** — [hxt0512@sjtu.edu.cn](mailto:hxt0512@sjtu.edu.cn)  
 
 We appreciate your interest in **SeeLe**!  
 
 ## 📖 Citation
 If you find this work helpful, please kindly consider citing our paper:
 ```
-@article{huang2025seele,
-  title={SeeLe: A Unified Acceleration Framework for Real-Time Gaussian Splatting},
-  author={Xiaotong Huang and He Zhu and Zihan Liu and Weikai Lin and Xiaohong Liu and Zhezhi He and Jingwen Leng and Minyi Guo and Yu Feng},
-  journal={arXiv preprint arXiv:2503.05168},
-  year={2025}
+@inproceedings{zhu2026seele,
+  title={SeeLe: A Unified Acceleration Framework for Real-Time Gaussian Splatting},
+  author={Zhu, He and Huang, Xiaotong and Liu, Zihan and Lin, Weikai and Liu, Xiaohong and He, Zhezhi and Leng, Jingwen and Guo, Minyi and Feng, Yu},
+  booktitle={Proceedings of the Computer Vision and Pattern Recognition Conference},
+  year={2026}
 }
 ```
