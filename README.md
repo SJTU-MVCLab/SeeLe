@@ -3,7 +3,7 @@
 <h1 align="center"><strong>SeeLe: A Unified Acceleration Framework for Real-Time Gaussian Splatting</strong></h1>
 </p>
 
-<h3 align="center">⭐CVPR 2026</h3>
+<h3 align="center">⭐CVPR 2026 highlight</h3>
 <h3 align="center"><a href="https://seele-project.netlify.app/">🌍Webpage</a> | <a href="https://seele-project.netlify.app/static/videos/arxiv_demo.mp4">🎥Video</a> | <a href="https://arxiv.org/abs/2503.05168">📄arXiv</a></h3>
 <p align="center">
   <img src="assets/teaser.png"
